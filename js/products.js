@@ -1,48 +1,29 @@
-
-
+// all our products for the products page//
 const products = [
-  {
-    name: "Running Shoes",
-    price: "$45",
-    image: "html/images/shoe.jpg"
-  },
-  {
-    name: "Smart Phone",
-    price: "$320",
-    image: "html/images/products/headphone.jpg"
-  },
-  {
-    name: "Leather Bag",
-    price: "$60",
-    image: "html/images/products/sh.jpg"
-  },
-  {
-    name: "Wireless Headphones",
-    price: "$80",
-    image: "html/images/products/watch.jpg"
-  }
+  { name: "shoe", price: "$19.99", image: "html/images/products/sh.jpg" },
+  { name: "laptop", price: "$49.99", image: "html/images/products/laptop.jpg" },
+
+
 ];
 
-const productGrid = document.getElementById("product-grid");
+
+const grid = document.getElementById("grid");
+
 
 products.forEach(product => {
+  const col = document.createElement("div");
+  col.className = "col-6 col-sm-4 col-md-3 col-lg-2"; 
 
-  const productCard = `
-  
-  <div class="col-md-3">
-    <div class="card h-100 shadow-sm">
+  col.innerHTML = `
+    <div class="card h-100">
       <img src="${product.image}" class="card-img-top" alt="${product.name}">
-
       <div class="card-body text-center">
         <h5 class="card-title">${product.name}</h5>
         <p class="text-danger fw-bold">${product.price}</p>
-        <button class="btn btn-warning w-100">Add to Cart</button>
+        <button class="btn btn-primary w-100">Add to Cart</button>
       </div>
     </div>
-  </div>
-  
   `;
 
-  productGrid.innerHTML += productCard;
-
+  grid.appendChild(col);
 });
