@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Shopping Cart</title>
+
+<link rel="stylesheet" href="/Css/Cart.css">
+
+</head>
+
+<body>
+
+<h2>Shopping Cart</h2>
+
+<div class="wrap">
+
+<div class="card">
+<div id="items"></div>
+<button class="primary" onclick="draw()">Update Cart</button>
+</div>
+
+<div class="card">
+
+<h3>Order Summary</h3>
+
+<div>Subtotal <b id="sub">$0</b></div>
+<div class="muted">Discount <b id="disc">$0</b></div>
+<div>Total <b id="total">$0</b></div>
+
+<input
+id="code"
+placeholder="Coupon code"
+class="coupon"
+oninput="draw()"
+/>
+
+<button class="primary checkout">Checkout</button>
+
+</div>
+
+</div>
+
+<script src="/js/cart.js"></script>
+
+</body>
+</html>
