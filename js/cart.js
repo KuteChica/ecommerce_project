@@ -5,7 +5,7 @@ name:"Furniture Set",
 opt:"Coffee",
 price:437,
 qty:1,
-img:"https://picsum.photos/64?1"
+img:"html/images/black.jpg"
 },
 {
 id:2,
@@ -13,7 +13,7 @@ name:"Vintage Dining Set",
 opt:"Brown",
 price:945,
 qty:2,
-img:"https://picsum.photos/64?2"
+img:"html/images/black.jpg"
 }
 ];
 
