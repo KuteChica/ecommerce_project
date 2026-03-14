@@ -1,5 +1,5 @@
 body{
-    background-color: white;
+    background-color: lightgray;
 }
 /*styling for the header begins from here*/
 *{
@@ -68,27 +68,30 @@ margin-right: 80px;
 .parent{
   background-color: lightgray;
   width: 100%;
-  height: 700px;
+  height: 50px;
 }
 
 /* styling for the hero section */
 .parent{
-height:100vh;
+height:60vh;
 background-image:url("/html/images/shop.jpg");
 background-size:cover;
 background-position:center;
+border-radius: 10px;
 }
 
 /* styling of the second section */
 .big{
   background-color: lightgray;
   width: 100%;
-  height: 700px;
+  height: 740px;
+  border-radius: 20px;
+ 
 }
 .small{
-    background-color: lightgray;
+    background-color:rgb(185, 195, 204);
     width:100%;
-    height: 150px;
+    height: 120px;
     display: flex;
     justify-content: space-around;
     padding: 20px;
@@ -112,6 +115,8 @@ background-position:center;
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(3, 200px);
   gap: 10px;
+  overflow: hidden;
+  
 
 }
 
@@ -147,16 +152,11 @@ background-position:center;
 }
 
 /* styling for the mother section */
-.mother{
-  background-color: lightgray;
-  width: 100%;
-  height: 150px;
-}
+
 
 /* styling for the fourth section */
 
 .four{
-    background-color:lightgrey;
   width: 100%;
   height: 500px;
   
@@ -167,6 +167,9 @@ background-position:center;
 /* container */
 .contain {
   padding: 20px 10px;
+  background-color: lightgray;
+  border-radius: 10px;
+  margin-top: 8px;
 }
 
 
