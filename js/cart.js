@@ -1,20 +1,5 @@
 const data=[
-{
-id:1,
-name:"Furniture Set",
-opt:"Coffee",
-price:437,
-qty:1,
-img:"html/images/black.jpg"
-},
-{
-id:2,
-name:"Vintage Dining Set",
-opt:"Brown",
-price:945,
-qty:2,
-img:"html/images/black.jpg"
-}
+
 ];
 
 const items=document.getElementById("items");

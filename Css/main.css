@@ -1,5 +1,5 @@
 body{
-    background-color: lightgray;
+    background-color: white;
 }
 /*styling for the header begins from here*/
 *{
@@ -16,7 +16,7 @@ body{
     height: 70px;
     width: 100%;
     position: relative;
-      margin-top: 20px;
+      
       
 }
 
@@ -24,7 +24,7 @@ body{
 /*styling logo begin from here*/
 
 .logo {
-height: 150px;
+height: 170px;
 width: auto;
 cursor: pointer;
 }
@@ -45,7 +45,7 @@ cursor: pointer;
 .navlinks ul li a{
     text-decoration: none;
    
-      color: black;
+      color: rgb(0, 81, 255);
     
     
 }
@@ -57,39 +57,45 @@ cursor: pointer;
 
 .nav-icons{
 display:flex;
-gap:20px;
 font-size:20px;
 cursor:pointer;
-gap :40px;
 margin-right: 80px;
+gap:10px
 }
 
 
+
 .parent{
-  background-color: lightgray;
+  background-color: white;
   width: 100%;
   height: 50px;
 }
 
-/* styling for the hero section */
-.parent{
+/* styling for the hero section*/
+.hero-slider{
 height:60vh;
 background-image:url("/html/images/shop.jpg");
 background-size:cover;
 background-position:center;
 border-radius: 10px;
-}
+border-radius: 10px;
+} 
+
+
+
+/* testing */
+
 
 /* styling of the second section */
 .big{
-  background-color: lightgray;
+  background-color: white;
   width: 100%;
   height: 740px;
   border-radius: 20px;
  
 }
 .small{
-    background-color:rgb(185, 195, 204);
+    background-color:white ;
     width:100%;
     height: 120px;
     display: flex;
@@ -167,9 +173,10 @@ border-radius: 10px;
 /* container */
 .contain {
   padding: 20px 10px;
-  background-color: lightgray;
+  background-color: white;
   border-radius: 10px;
   margin-top: 8px;
+  
 }
 
 
@@ -184,7 +191,8 @@ border-radius: 10px;
 .row3 {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 3rem;
+  margin-left: 50px;
 }
 
 
@@ -238,11 +246,42 @@ border-radius: 10px;
 }
 
 .right-text {
+  width: 100%;
   display: flex;
   gap: 20px;
+  background-color: white;
+}
+.no{
+   display: flex;
+  gap: 20px;
+  margin-left: 800px;
+
 }
 
 
+
+
+/* sith section styling  */
+
+.sixth{
+   width: 100%;
+  height: 800px;
+  background-color: white;
+  margin-top: 10px;
+}
+
+.snext{
+  display: flex;
+
+}
+.sno{
+    
+  margin-left: 1000px;
+}
+
+#savedgrid{
+  margin-top: 20px;
+}
 
 /* footer */
 .footer {
@@ -253,3 +292,6 @@ border-radius: 10px;
 .footer a:hover {
   text-decoration: underline;
 }
+
+/* styling for search bar */
+
