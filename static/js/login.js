@@ -1,15 +1,15 @@
 import { login, logout, getCustomerOrders } from "../../backend/server.js";
 
-function getProfile() {
+function readUserProfile() {
     try {
         const raw = localStorage.getItem("userProfile");
         return raw ? JSON.parse(raw) : null;
-    } catch (error) {
+    } catch (e) {
         return null;
     }
 }
 
-function getDisplayName(profile) {
+function nameForHeader(profile) {
     if (!profile) return "My Account";
     if (profile.name && profile.name.trim()) return profile.name.trim();
     if (profile.email && profile.email.includes("@")) return profile.email.split("@")[0];
@@ -17,143 +17,148 @@ function getDisplayName(profile) {
     return "My Account";
 }
 
-function bindAccountCTA() {
-    const accountCta = document.querySelector("[data-account-cta]");
-    if (!accountCta) return;
+function setupAccountButton() {
+    const accountBtn = document.querySelector("[data-account-cta]");
+    if (!accountBtn) return;
 
-    const profile = getProfile();
-    accountCta.textContent = getDisplayName(profile);
-    accountCta.setAttribute("href", "/pages/account.html");
+    const me = readUserProfile();
+    accountBtn.textContent = nameForHeader(me);
+    accountBtn.setAttribute("href", "/pages/account.html");
 }
 
-function bindAccountPageDetails() {
-    const profile = getProfile() || {};
+function fillAccountDetails() {
+    const me = readUserProfile() || {};
 
-    const nameEl = document.getElementById("accountName");
-    const emailEl = document.getElementById("accountEmail");
-    const phoneEl = document.getElementById("accountPhone");
+    const nameTag = document.getElementById("accountName");
+    const emailTag = document.getElementById("accountEmail");
+    const phoneTag = document.getElementById("accountPhone");
 
-    if (nameEl) nameEl.textContent = profile.name || "Not set";
-    if (emailEl) emailEl.textContent = profile.email || "Not set";
-    if (phoneEl) phoneEl.textContent = profile.phone || "Not set";
+    if (nameTag) nameTag.textContent = me.name || "Not set";
+    if (emailTag) emailTag.textContent = me.email || "Not set";
+    if (phoneTag) phoneTag.textContent = me.phone || "Not set";
 }
 
-function bindCheckoutDetails() {
-    const profile = getProfile() || {};
+function fillCheckoutDefaults() {
+    const me = readUserProfile() || {};
 
-    const nameInput = document.getElementById("checkoutName");
-    const emailInput = document.getElementById("checkoutEmail");
-    const phoneInput = document.getElementById("checkoutPhone");
+    const inputName = document.getElementById("checkoutName");
+    const inputEmail = document.getElementById("checkoutEmail");
+    const inputPhone = document.getElementById("checkoutPhone");
 
-    if (nameInput && profile.name) nameInput.value = profile.name;
-    if (emailInput && profile.email) emailInput.value = profile.email;
-    if (phoneInput && profile.phone) phoneInput.value = profile.phone;
+    if (inputName && me.name) inputName.value = me.name;
+    if (inputEmail && me.email) inputEmail.value = me.email;
+    if (inputPhone && me.phone) inputPhone.value = me.phone;
 }
 
-function formatPrice(amount) {
+function moneyText(amount) {
     return `GH₵${Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function formatDate(timestamp) {
-    if (!timestamp) return "Unknown time";
-    return new Date(timestamp).toLocaleString();
+function timeText(ts) {
+    if (!ts) return "Unknown time";
+    return new Date(ts).toLocaleString();
 }
 
-function normalizeStatus(status) {
-    const allowed = ["pending", "processing", "completed"];
-    const cleanStatus = (status || "").toLowerCase().trim();
-    return allowed.includes(cleanStatus) ? cleanStatus : "pending";
+function cleanStatus(status) {
+    const valid = ["pending", "processing", "completed"];
+    const lower = (status || "").toLowerCase().trim();
+    return valid.includes(lower) ? lower : "pending";
 }
 
-function toStatusLabel(status) {
-    const cleanStatus = normalizeStatus(status);
-    return cleanStatus.charAt(0).toUpperCase() + cleanStatus.slice(1);
+function displayStatus(status) {
+    const value = cleanStatus(status);
+    return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function getStatusClass(status) {
-    const cleanStatus = normalizeStatus(status);
-    if (cleanStatus === "completed") return "status-pill status-completed";
-    if (cleanStatus === "processing") return "status-pill status-processing";
+function statusStyle(status) {
+    const value = cleanStatus(status);
+    if (value === "completed") return "status-pill status-completed";
+    if (value === "processing") return "status-pill status-processing";
     return "status-pill status-pending";
 }
 
-function stageClass(currentStatus, stage) {
-    const order = { pending: 0, processing: 1, completed: 2 };
-    const currentIndex = order[normalizeStatus(currentStatus)];
-    const stageIndex = order[stage];
-    return stageIndex <= currentIndex ? "order-stage active" : "order-stage";
+function stageStyle(currentStatus, stage) {
+    const stepOrder = { pending: 0, processing: 1, completed: 2 };
+    const now = stepOrder[cleanStatus(currentStatus)];
+    const target = stepOrder[stage];
+    return target <= now ? "order-stage active" : "order-stage";
 }
 
-async function bindAccountOrderTracking() {
-    const list = document.getElementById("orderTrackingList");
-    if (!list) return;
+async function renderOrderTracker() {
+    const wrapper = document.getElementById("orderTrackingList");
+    if (!wrapper) return;
 
-    const profile = getProfile() || {};
-    const email = (profile.email || "").trim();
-    if (!email) {
-        list.innerHTML = "<div class=\"summary-item\"><span>Add an email to your account to track orders.</span></div>";
+    const me = readUserProfile() || {};
+    const myEmail = (me.email || "").trim();
+    if (!myEmail) {
+        wrapper.innerHTML = "<div class=\"summary-item\"><span>Add an email to your account to track orders.</span></div>";
         return;
     }
 
-    const orders = await getCustomerOrders(email);
-    if (!orders.length) {
-        list.innerHTML = "<div class=\"summary-item\"><span>No orders yet. Your placed orders will appear here.</span></div>";
+    const myOrders = await getCustomerOrders(myEmail);
+    if (!myOrders.length) {
+        wrapper.innerHTML = "<div class=\"summary-item\"><span>No orders yet. Your placed orders will appear here.</span></div>";
         return;
     }
 
-    const latestOrderId = localStorage.getItem("lastOrderId");
-    list.innerHTML = orders.map((order) => {
-        const status = normalizeStatus(order.status);
+    const lastOrder = localStorage.getItem("lastOrderId");
+
+    wrapper.innerHTML = myOrders.map((order) => {
+        const state = cleanStatus(order.status);
         const items = Array.isArray(order.items) ? order.items : [];
-        const itemSummary = items.map((item) => `${item.name || "Item"} x${Number(item.quantity || 0)}`).join(", ");
-        const latestTag = latestOrderId && latestOrderId === order.id ? "<span class=\"status-pill status-processing\">Latest</span>" : "";
+        const itemLine = items.map((item) => `${item.name || "Item"} x${Number(item.quantity || 0)}`).join(", ");
+        const latestBadge = lastOrder && lastOrder === order.id
+            ? "<span class=\"status-pill status-processing\">Latest</span>"
+            : "";
 
         return `
         <article class="order-card">
           <div class="order-card-head">
             <div>
               <strong>Order #${order.id.slice(0, 8)}</strong>
-              <p>${formatDate(order.createdAt)}</p>
+              <p>${timeText(order.createdAt)}</p>
             </div>
             <div class="order-status-wrap">
-              ${latestTag}
-              <span class="${getStatusClass(status)}">${toStatusLabel(status)}</span>
+              ${latestBadge}
+              <span class="${statusStyle(state)}">${displayStatus(state)}</span>
             </div>
           </div>
           <div class="order-stages" aria-label="Order stage">
-            <span class="${stageClass(status, "pending")}">Pending</span>
-            <span class="${stageClass(status, "processing")}">Processing</span>
-            <span class="${stageClass(status, "completed")}">Completed</span>
+            <span class="${stageStyle(state, "pending")}">Pending</span>
+            <span class="${stageStyle(state, "processing")}">Processing</span>
+            <span class="${stageStyle(state, "completed")}">Completed</span>
           </div>
-          <p><strong>Items:</strong> ${itemSummary || "No items listed"}</p>
-          <p><strong>Total:</strong> ${formatPrice(order.total)}</p>
+          <p><strong>Items:</strong> ${itemLine || "No items listed"}</p>
+          <p><strong>Total:</strong> ${moneyText(order.total)}</p>
         </article>
-      `;
+        `;
     }).join("");
 }
 
-function guardProtectedPage() {
-    const requiresAuth = document.body?.dataset?.requiresAuth === "true";
-    if (requiresAuth && !localStorage.getItem("token")) {
+function protectPages() {
+    const needsLogin = document.body?.dataset?.requiresAuth === "true";
+    if (needsLogin && !localStorage.getItem("token")) {
         window.location.href = "/pages/login.html";
     }
 }
 
 window.handleLogin = async function () {
-    const email = document.getElementById("email").value ;
-    const password = document.getElementById("password").value ;
+    const emailField = document.getElementById("email");
+    const passField = document.getElementById("password");
 
-    const status = await login(email , password)
+    const email = emailField ? emailField.value : "";
+    const password = passField ? passField.value : "";
 
-    if(status === 1) {
+    const loginState = await login(email, password);
+
+    if (loginState === 1) {
         alert("Login successful");
         window.location.href = "/pages/home.html";
-
-    } else {
-        alert("Invalid login")
+        return;
     }
-}
 
+    alert("Invalid login");
+};
 
 window.handleLogout = async function () {
     await logout();
@@ -162,9 +167,9 @@ window.handleLogout = async function () {
 };
 
 document.addEventListener("DOMContentLoaded", async function () {
-    guardProtectedPage();
-    bindAccountCTA();
-    bindAccountPageDetails();
-    bindCheckoutDetails();
-    await bindAccountOrderTracking();
+    protectPages();
+    setupAccountButton();
+    fillAccountDetails();
+    fillCheckoutDefaults();
+    await renderOrderTracker();
 });

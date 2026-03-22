@@ -1,17 +1,20 @@
 import { adminLogin, adminSignUp } from "../../backend/server.js";
 
 window.handleAdminLogin = async function () {
-    const email = document.getElementById("adminEmail").value.trim();
-    const password = document.getElementById("adminPassword").value.trim();
+    const adminEmailInput = document.getElementById("adminEmail");
+    const adminPasswordInput = document.getElementById("adminPassword");
 
-    if (!email || !password) {
+    const emailValue = adminEmailInput ? adminEmailInput.value.trim() : "";
+    const passwordValue = adminPasswordInput ? adminPasswordInput.value.trim() : "";
+
+    if (!emailValue || !passwordValue) {
         alert("Email and password are required.");
         return;
     }
 
-    const result = await adminLogin(email, password);
-    if (!result.ok) {
-        alert(result.message || "Admin login failed.");
+    const loginRes = await adminLogin(emailValue, passwordValue);
+    if (!loginRes.ok) {
+        alert(loginRes.message || "Admin login failed.");
         return;
     }
 
@@ -20,18 +23,22 @@ window.handleAdminLogin = async function () {
 };
 
 window.handleAdminSignup = async function () {
-    const name = document.getElementById("adminName").value.trim();
-    const email = document.getElementById("adminEmail").value.trim();
-    const password = document.getElementById("adminPassword").value.trim();
+    const nameInput = document.getElementById("adminName");
+    const emailInput = document.getElementById("adminEmail");
+    const passwordInput = document.getElementById("adminPassword");
 
-    if (!name || !email || !password) {
+    const nameValue = nameInput ? nameInput.value.trim() : "";
+    const emailValue = emailInput ? emailInput.value.trim() : "";
+    const passwordValue = passwordInput ? passwordInput.value.trim() : "";
+
+    if (!nameValue || !emailValue || !passwordValue) {
         alert("Name, email, and password are required.");
         return;
     }
 
-    const result = await adminSignUp(name, email, password);
-    if (!result.ok) {
-        alert(result.message || "Admin signup failed.");
+    const signRes = await adminSignUp(nameValue, emailValue, passwordValue);
+    if (!signRes.ok) {
+        alert(signRes.message || "Admin signup failed.");
         return;
     }
 

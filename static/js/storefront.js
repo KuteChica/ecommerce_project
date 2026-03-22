@@ -1,19 +1,19 @@
 import { getProducts, createOrder, getProductReviews, addProductReview, hasPurchasedProduct } from "../../backend/server.js";
 
 const CART_KEY = "cartItems";
-let storefrontProducts = [];
-let activeModalProductId = "";
-let activeCategoryFilter = "";
-let showAllProducts = false;
+let productListCache = [];
+let openProductId = "";
+let currentCategoryFilter = "";
+let showEverything = false;
 
-function formatPrice(amount) {
+function formatMoney(amount) {
     return `GH₵${Number(amount || 0).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     })}`;
 }
 
-function getCart() {
+function readCart() {
     try {
         const raw = localStorage.getItem(CART_KEY);
         const cart = raw ? JSON.parse(raw) : [];
@@ -23,12 +23,12 @@ function getCart() {
     }
 }
 
-function saveCart(cart) {
+function writeCart(cart) {
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
 }
 
 function addToCart(productId) {
-    const cart = getCart();
+    const cart = readCart();
     const existing = cart.find((item) => item.productId === productId);
 
     if (existing) {
@@ -37,11 +37,11 @@ function addToCart(productId) {
         cart.push({ productId, quantity: 1 });
     }
 
-    saveCart(cart);
+    writeCart(cart);
 }
 
 function updateCartQuantity(productId, nextQty) {
-    const cart = getCart();
+    const cart = readCart();
     const index = cart.findIndex((item) => item.productId === productId);
     if (index === -1) return;
 
@@ -51,10 +51,10 @@ function updateCartQuantity(productId, nextQty) {
         cart[index].quantity = nextQty;
     }
 
-    saveCart(cart);
+    writeCart(cart);
 }
 
-function mapById(products) {
+function indexById(products) {
     const result = {};
     for (const product of products) {
         result[product.id] = product;
@@ -62,12 +62,12 @@ function mapById(products) {
     return result;
 }
 
-function safeText(value, fallback) {
+function safeString(value, fallback) {
     if (!value || typeof value !== "string") return fallback;
     return value;
 }
 
-function getUserProfile() {
+function readUserProfile() {
     try {
         const raw = localStorage.getItem("userProfile");
         return raw ? JSON.parse(raw) : null;
@@ -167,15 +167,15 @@ function renderModalReviews(reviews) {
 
     list.innerHTML = reviews.map((review) => `
       <article class="review-item">
-        <p><strong>${safeText(review.reviewerName, "Customer")}</strong></p>
+        <p><strong>${safeString(review.reviewerName, "Customer")}</strong></p>
         <p class="review-stars">${renderStars(review.rating)} (${Number(review.rating || 0).toFixed(1)})</p>
-        <p>${safeText(review.comment, "No comment provided.")}</p>
+        <p>${safeString(review.comment, "No comment provided.")}</p>
       </article>
     `).join("");
 }
 
 async function updateReviewFormAccess(productId) {
-    const profile = getUserProfile();
+    const profile = readUserProfile();
     const reviewForm = document.getElementById("productReviewForm");
     const hint = document.getElementById("reviewHint");
     const submitButton = reviewForm?.querySelector("button[type=\"submit\"]");
@@ -211,16 +211,16 @@ async function openProductModal(product) {
     const stock = document.getElementById("productModalStock");
     const description = document.getElementById("productModalDescription");
 
-    if (image) image.src = safeText(product.imageUrl, "https://via.placeholder.com/400x300?text=Product");
-    if (image) image.alt = safeText(product.name, "Product image");
-    if (title) title.textContent = safeText(product.name, "Untitled Product");
-    if (category) category.textContent = safeText(product.category, "Uncategorized");
+    if (image) image.src = safeString(product.imageUrl, "https://via.placeholder.com/400x300?text=Product");
+    if (image) image.alt = safeString(product.name, "Product image");
+    if (title) title.textContent = safeString(product.name, "Untitled Product");
+    if (category) category.textContent = safeString(product.category, "Uncategorized");
     if (rating) rating.textContent = getRatingLabel(product);
-    if (price) price.textContent = formatPrice(product.price);
+    if (price) price.textContent = formatMoney(product.price);
     if (stock) stock.textContent = `In stock: ${Number(product.inStock || 0)}`;
-    if (description) description.textContent = safeText(product.description, "No description available.");
+    if (description) description.textContent = safeString(product.description, "No description available.");
 
-    activeModalProductId = product.id;
+    openProductId = product.id;
     const reviews = await getProductReviews(product.id);
     renderModalReviews(reviews);
     await updateReviewFormAccess(product.id);
@@ -231,9 +231,9 @@ async function openProductModal(product) {
 async function handleReviewSubmit(event) {
     event.preventDefault();
 
-    if (!activeModalProductId) return;
+    if (!openProductId) return;
 
-    const profile = getUserProfile();
+    const profile = readUserProfile();
     if (!profile?.email) {
         alert("Please login to submit a review.");
         return;
@@ -246,7 +246,7 @@ async function handleReviewSubmit(event) {
     const commentValue = commentInput ? commentInput.value.trim() : "";
 
     const result = await addProductReview(
-        activeModalProductId,
+        openProductId,
         profile.name || profile.email,
         profile.email,
         ratingValue,
@@ -263,13 +263,13 @@ async function handleReviewSubmit(event) {
     if (commentInput) commentInput.value = "";
     if (ratingInput) ratingInput.value = "3";
 
-    storefrontProducts = await getProducts();
-    renderProducts(storefrontProducts);
-    renderCategories(storefrontProducts);
-    renderCart(storefrontProducts);
-    renderCheckout(storefrontProducts);
+    productListCache = await getProducts();
+    renderProducts(productListCache);
+    renderCategories(productListCache);
+    renderCart(productListCache);
+    renderCheckout(productListCache);
 
-    const refreshedProduct = storefrontProducts.find((item) => item.id === activeModalProductId);
+    const refreshedProduct = productListCache.find((item) => item.id === openProductId);
     if (refreshedProduct) {
         await openProductModal(refreshedProduct);
     }
@@ -279,14 +279,14 @@ function renderProducts(products) {
     const productGrid = document.querySelector("[data-product-grid]");
     if (!productGrid) return;
 
-    const normalizedFilter = activeCategoryFilter.trim().toLowerCase();
+    const normalizedFilter = currentCategoryFilter.trim().toLowerCase();
     const filteredProducts = normalizedFilter
-        ? products.filter((item) => safeText(item.category, "Uncategorized").trim().toLowerCase() === normalizedFilter)
+        ? products.filter((item) => safeString(item.category, "Uncategorized").trim().toLowerCase() === normalizedFilter)
         : products;
-    const visibleProducts = showAllProducts ? filteredProducts : filteredProducts.slice(0, 9);
+    const visibleProducts = showEverything ? filteredProducts : filteredProducts.slice(0, 9);
 
     if (!filteredProducts.length) {
-        const filterLabel = activeCategoryFilter || "this category";
+        const filterLabel = currentCategoryFilter || "this category";
         productGrid.innerHTML = `<article class="product-card"><p>No products found for ${filterLabel}.</p></article>`;
         return;
     }
@@ -298,12 +298,12 @@ function renderProducts(products) {
 
     productGrid.innerHTML = visibleProducts.map((item) => `
       <article class="product-card product-clickable" data-product-id="${item.id}">
-        <img src="${safeText(item.imageUrl, "https://via.placeholder.com/400x300?text=Product")}" alt="${safeText(item.name, "Product")}">
-        <p class="label">${safeText(item.category, "Uncategorized")}</p>
+        <img src="${safeString(item.imageUrl, "https://via.placeholder.com/400x300?text=Product")}" alt="${safeString(item.name, "Product")}">
+        <p class="label">${safeString(item.category, "Uncategorized")}</p>
         <p class="product-rating">${getRatingLabel(item)}</p>
-        <h3>${safeText(item.name, "Untitled Product")}</h3>
-        <p>${safeText(item.description, "No description available.")}</p>
-        <span>${formatPrice(item.price)}</span>
+        <h3>${safeString(item.name, "Untitled Product")}</h3>
+        <p>${safeString(item.description, "No description available.")}</p>
+        <span>${formatMoney(item.price)}</span>
         <button class="btn primary product-action" data-add-to-cart="${item.id}" type="button" ${Number(item.inStock || 0) <= 0 ? "disabled" : ""}>
           ${Number(item.inStock || 0) <= 0 ? "Out of Stock" : "Add to Cart"}
         </button>
@@ -317,7 +317,7 @@ function renderCategories(products) {
 
     const grouped = {};
     for (const item of products) {
-        const key = safeText(item.category, "Uncategorized");
+        const key = safeString(item.category, "Uncategorized");
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(item);
     }
@@ -335,20 +335,20 @@ function renderCategories(products) {
         <h3>${category}</h3>
         <p>${items.length} product(s) available in this category.</p>
         <a class="link" href="${storePath}?category=${encodeURIComponent(category)}#featured">View Products</a>
-        <img src="${safeText(items[0].imageUrl, "https://via.placeholder.com/400x300?text=Category")}" alt="${category}">
+        <img src="${safeString(items[0].imageUrl, "https://via.placeholder.com/400x300?text=Category")}" alt="${category}">
       </article>
     `).join("");
 }
 
 function applyProductFiltersFromUrl() {
     const params = new URLSearchParams(window.location.search);
-    activeCategoryFilter = (params.get("category") || "").trim();
-    showAllProducts = (params.get("view") || "").toLowerCase() === "all";
+    currentCategoryFilter = (params.get("category") || "").trim();
+    showEverything = (params.get("view") || "").toLowerCase() === "all";
 }
 
 function getLineItems(products) {
-    const byId = mapById(products);
-    const cart = getCart();
+    const byId = indexById(products);
+    const cart = readCart();
     const lineItems = [];
 
     for (const entry of cart) {
@@ -359,8 +359,8 @@ function getLineItems(products) {
 
         lineItems.push({
             productId: product.id,
-            name: safeText(product.name, "Untitled Product"),
-            imageUrl: safeText(product.imageUrl, "https://via.placeholder.com/120x120?text=Product"),
+            name: safeString(product.name, "Untitled Product"),
+            imageUrl: safeString(product.imageUrl, "https://via.placeholder.com/120x120?text=Product"),
             unitPrice: Number(product.price || 0),
             quantity
         });
@@ -383,7 +383,7 @@ function renderCart(products) {
     const lineItems = getLineItems(products);
     if (!lineItems.length) {
         container.innerHTML = "<div class=\"summary-item\"><span>Your cart is empty.</span></div>";
-        totalEl.textContent = formatPrice(0);
+        totalEl.textContent = formatMoney(0);
         if (checkoutBtn) checkoutBtn.classList.add("disabled-btn");
         return;
     }
@@ -400,21 +400,21 @@ function renderCart(products) {
             <img src="${item.imageUrl}" alt="${item.name}" class="cart-item-image">
             <div>
             <strong>${item.name}</strong>
-            <p>${formatPrice(item.unitPrice)} each</p>
+            <p>${formatMoney(item.unitPrice)} each</p>
             </div>
           </div>
           <div class="cart-actions">
             <button type="button" class="cart-qty-btn" data-cart-dec="${item.productId}">-</button>
             <span>${item.quantity}</span>
             <button type="button" class="cart-qty-btn" data-cart-inc="${item.productId}">+</button>
-            <strong>${formatPrice(lineTotal)}</strong>
+            <strong>${formatMoney(lineTotal)}</strong>
             <button type="button" class="cart-remove-btn" data-cart-remove="${item.productId}">Remove</button>
           </div>
         </div>
       `;
     }).join("");
 
-    totalEl.textContent = formatPrice(total);
+    totalEl.textContent = formatMoney(total);
 }
 
 function renderCheckout(products) {
@@ -426,7 +426,7 @@ function renderCheckout(products) {
     const lineItems = getLineItems(products);
     if (!lineItems.length) {
         itemsEl.innerHTML = "<div class=\"summary-item\"><span>No items in cart. Add products first.</span></div>";
-        totalEl.textContent = formatPrice(0);
+        totalEl.textContent = formatMoney(0);
         if (placeOrderBtn) placeOrderBtn.classList.add("disabled-btn");
         return;
     }
@@ -440,11 +440,11 @@ function renderCheckout(products) {
         return `
         <div class="summary-item">
           <span>${item.name} x ${item.quantity}</span>
-          <strong>${formatPrice(lineTotal)}</strong>
+          <strong>${formatMoney(lineTotal)}</strong>
         </div>
       `;
     }).join("");
-    totalEl.textContent = formatPrice(total);
+    totalEl.textContent = formatMoney(total);
 }
 
 function bindCartActions() {
@@ -452,9 +452,9 @@ function bindCartActions() {
         const addBtn = event.target.closest("[data-add-to-cart]");
         if (addBtn) {
             const productId = addBtn.dataset.addToCart;
-            const current = getCart().find((entry) => entry.productId === productId);
+            const current = readCart().find((entry) => entry.productId === productId);
             const currentQty = Number(current?.quantity || 0);
-            const stock = getStockForProduct(storefrontProducts, productId);
+            const stock = getStockForProduct(productListCache, productId);
 
             if (stock <= 0) {
                 alert("This product is out of stock.");
@@ -471,16 +471,16 @@ function bindCartActions() {
             setTimeout(() => {
                 addBtn.textContent = "Add to Cart";
             }, 600);
-            renderCart(storefrontProducts);
-            renderCheckout(storefrontProducts);
+            renderCart(productListCache);
+            renderCheckout(productListCache);
             return;
         }
 
         const incBtn = event.target.closest("[data-cart-inc]");
         if (incBtn) {
             const productId = incBtn.dataset.cartInc;
-            const current = getCart().find((entry) => entry.productId === productId);
-            const stock = getStockForProduct(storefrontProducts, productId);
+            const current = readCart().find((entry) => entry.productId === productId);
+            const stock = getStockForProduct(productListCache, productId);
             const nextQty = Number(current?.quantity || 0) + 1;
 
             if (nextQty > stock) {
@@ -489,18 +489,18 @@ function bindCartActions() {
             }
 
             updateCartQuantity(productId, nextQty);
-            renderCart(storefrontProducts);
-            renderCheckout(storefrontProducts);
+            renderCart(productListCache);
+            renderCheckout(productListCache);
             return;
         }
 
         const decBtn = event.target.closest("[data-cart-dec]");
         if (decBtn) {
             const productId = decBtn.dataset.cartDec;
-            const current = getCart().find((entry) => entry.productId === productId);
+            const current = readCart().find((entry) => entry.productId === productId);
             updateCartQuantity(productId, Number(current?.quantity || 0) - 1);
-            renderCart(storefrontProducts);
-            renderCheckout(storefrontProducts);
+            renderCart(productListCache);
+            renderCheckout(productListCache);
             return;
         }
 
@@ -508,8 +508,8 @@ function bindCartActions() {
         if (removeBtn) {
             const productId = removeBtn.dataset.cartRemove;
             updateCartQuantity(productId, 0);
-            renderCart(storefrontProducts);
-            renderCheckout(storefrontProducts);
+            renderCart(productListCache);
+            renderCheckout(productListCache);
         }
     });
 }
@@ -523,7 +523,7 @@ function bindProductDetailsModal() {
         if (!productCard) return;
 
         const productId = productCard.dataset.productId;
-        const product = storefrontProducts.find((item) => item.id === productId);
+        const product = productListCache.find((item) => item.id === productId);
         if (!product) return;
 
         openProductModal(product);
@@ -542,7 +542,7 @@ function bindCheckoutAction() {
         const checkoutEmail = document.getElementById("checkoutEmail")?.value?.trim() || "";
         const checkoutCity = document.getElementById("checkoutCity")?.value?.trim() || "";
         const checkoutAddress = document.getElementById("checkoutAddress")?.value?.trim() || "";
-        const profile = getUserProfile();
+        const profile = readUserProfile();
         const purchaserEmail = (profile?.email || checkoutEmail || "").trim().toLowerCase();
 
         if (!checkoutName || !checkoutPhone || !checkoutEmail || !checkoutCity || !checkoutAddress) {
@@ -592,13 +592,13 @@ function bindCheckoutAction() {
 
 document.addEventListener("DOMContentLoaded", async function () {
     applyProductFiltersFromUrl();
-    storefrontProducts = await getProducts();
+    productListCache = await getProducts();
     ensureProductModal();
 
-    renderProducts(storefrontProducts);
-    renderCategories(storefrontProducts);
-    renderCart(storefrontProducts);
-    renderCheckout(storefrontProducts);
+    renderProducts(productListCache);
+    renderCategories(productListCache);
+    renderCart(productListCache);
+    renderCheckout(productListCache);
 
     bindCartActions();
     bindProductDetailsModal();

@@ -13,9 +13,9 @@ appId: "1:939662322490:web:e3f97e9622f9ecd021be03"
 };
 
 
-const server = initializeApp(firebaseConfig);
-const auth = getAuth(server);
-const database = getFirestore(server);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 
 
@@ -24,7 +24,7 @@ export async function signUp(name, email, phone, password) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        await setDoc(doc(database, "users", user.uid), {
+        await setDoc(doc(db, "users", user.uid), {
             name,
             email,
             phone
@@ -53,7 +53,7 @@ export async function login(email , password) {
 
         localStorage.setItem("token", token) ;
 
-        const profileDoc = await getDoc(doc(database, "users", user.uid));
+        const profileDoc = await getDoc(doc(db, "users", user.uid));
         const profileData = profileDoc.exists() ? profileDoc.data() : {};
         const profile = {
             name: profileData.name || "",
@@ -96,7 +96,7 @@ export async function adminSignUp(name, email, password) {
         const user = userCredential.user;
         const token = await user.getIdToken();
 
-        await setDoc(doc(database, "admins", user.uid), {
+        await setDoc(doc(db, "admins", user.uid), {
             name: name.trim(),
             email: email.trim(),
             role: "admin"
@@ -123,7 +123,7 @@ export async function adminLogin(email, password) {
         const user = userCredential.user;
         const token = await user.getIdToken();
 
-        const adminDocRef = doc(database, "admins", user.uid);
+        const adminDocRef = doc(db, "admins", user.uid);
         const adminDoc = await getDoc(adminDocRef);
 
         if (!adminDoc.exists()) {
@@ -170,7 +170,7 @@ export async function addProduct(name, description, category, price, imageUrl, i
             return { ok: false, message: "Stock must be a valid number." };
         }
 
-        const productRef = await addDoc(collection(database, "products"), {
+        const productRef = await addDoc(collection(db, "products"), {
             name: name.trim(),
             description: description.trim(),
             category: category.trim(),
@@ -191,7 +191,7 @@ export async function addProduct(name, description, category, price, imageUrl, i
 
 export async function getProducts() {
     try {
-        const productsQuery = query(collection(database, "products"), orderBy("createdAt", "desc"));
+        const productsQuery = query(collection(db, "products"), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(productsQuery);
 
         return snapshot.docs.map((entry) => ({
@@ -212,7 +212,7 @@ export async function updateInventory(productId, inStock) {
             return { ok: false, message: "Invalid inventory update." };
         }
 
-        await updateDoc(doc(database, "products", productId), {
+        await updateDoc(doc(db, "products", productId), {
             inStock: cleanStock
         });
 
@@ -242,7 +242,7 @@ export async function createOrder(orderPayload) {
             return { ok: false, message: "Order total is invalid." };
         }
 
-        const orderRef = await addDoc(collection(database, "orders"), {
+        const orderRef = await addDoc(collection(db, "orders"), {
             customer: {
                 ...customer,
                 email: (customer.email || "").trim(),
@@ -264,7 +264,7 @@ export async function createOrder(orderPayload) {
 
 export async function getOrders() {
     try {
-        const ordersQuery = query(collection(database, "orders"), orderBy("createdAt", "desc"));
+        const ordersQuery = query(collection(db, "orders"), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(ordersQuery);
 
         return snapshot.docs.map((entry) => ({
@@ -285,9 +285,9 @@ export async function getCustomerOrders(email) {
         const merged = new Map();
 
         const lookups = [
-            query(collection(database, "orders"), where("purchaserEmail", "==", normalizedEmail)),
-            query(collection(database, "orders"), where("customer.emailLower", "==", normalizedEmail)),
-            query(collection(database, "orders"), where("customer.email", "==", rawEmail))
+            query(collection(db, "orders"), where("purchaserEmail", "==", normalizedEmail)),
+            query(collection(db, "orders"), where("customer.emailLower", "==", normalizedEmail)),
+            query(collection(db, "orders"), where("customer.email", "==", rawEmail))
         ];
 
         for (const ordersQuery of lookups) {
@@ -314,7 +314,7 @@ export async function updateOrderStatus(orderId, status) {
             return { ok: false, message: "Invalid order status update." };
         }
 
-        await updateDoc(doc(database, "orders", orderId), {
+        await updateDoc(doc(db, "orders", orderId), {
             status
         });
 
@@ -331,9 +331,9 @@ export async function hasPurchasedProduct(email, productId) {
         const normalizedEmail = email.trim().toLowerCase();
 
         const lookups = [
-            query(collection(database, "orders"), where("purchaserEmail", "==", normalizedEmail)),
-            query(collection(database, "orders"), where("customer.emailLower", "==", normalizedEmail)),
-            query(collection(database, "orders"), where("customer.email", "==", email.trim()))
+            query(collection(db, "orders"), where("purchaserEmail", "==", normalizedEmail)),
+            query(collection(db, "orders"), where("customer.emailLower", "==", normalizedEmail)),
+            query(collection(db, "orders"), where("customer.email", "==", email.trim()))
         ];
 
         for (const ordersQuery of lookups) {
@@ -358,7 +358,7 @@ export async function getProductReviews(productId) {
     try {
         if (!productId) return [];
         const reviewsQuery = query(
-            collection(database, "products", productId, "reviews"),
+            collection(db, "products", productId, "reviews"),
             orderBy("createdAt", "desc")
         );
         const snapshot = await getDocs(reviewsQuery);
@@ -390,7 +390,7 @@ export async function addProductReview(productId, reviewerName, reviewerEmail, r
         }
 
         const reviewText = (comment || "").trim();
-        await addDoc(collection(database, "products", productId, "reviews"), {
+        await addDoc(collection(db, "products", productId, "reviews"), {
             reviewerName: (reviewerName || reviewerEmail || "Customer").trim(),
             reviewerEmail: reviewerEmail.trim(),
             rating: cleanRating,
@@ -398,7 +398,7 @@ export async function addProductReview(productId, reviewerName, reviewerEmail, r
             createdAt: Date.now()
         });
 
-        const productRef = doc(database, "products", productId);
+        const productRef = doc(db, "products", productId);
         const productSnap = await getDoc(productRef);
         const productData = productSnap.exists() ? productSnap.data() : {};
         const currentCount = Number(productData.ratingCount || 0);
