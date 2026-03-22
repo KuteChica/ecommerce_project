@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up | SwiftServe</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../static/css/index.css">
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">e</div>
+        <span>SwiftServe</span>
+      </div>
+      <nav class="navlinks">
+        <a href="../index.html">Home</a>
+        <a href="../index.html#featured">Products</a>
+        <a href="./about.html">About</a>
+        <a href="./cart.html">Cart</a>
+        <a href="./contact.html">Contact</a>
+        <a href="./FAQ.html">FAQ</a>
+        <a href="./login.html">Login</a>
+      </nav>
+      <a class="cta" href="./login.html">Sign In</a>
+    </header>
+
+    <section class="simple-hero">
+      <h1>Create an Account</h1>
+      <p>Join SwiftServe for faster checkout and order tracking.</p>
+    </section>
+
+    <section class="content-panel">
+      <div class="form-grid">
+        <div class="input-group">
+          <label>Full Name</label>
+          <input type="text" placeholder="Jane Doe" id="username">
+        </div>
+        <div class="input-group">
+          <label>Email</label>
+          <input type="email" placeholder="you@email.com" id="email">
+        </div>
+        <div class="input-group">
+          <label>Phone</label>
+          <input type="text" placeholder="+233 000 000 000" id="phone">
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input type="password" placeholder="••••••••" id="password">
+        </div>
+      </div>
+      <button type="button" class="btn primary" onclick="handleSignup()">Create Account</button>
+      <a class="link" href="/pages/admin-signup.html">Need an admin account? Create one here.</a>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="#" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+        <a href="#" aria-label="Snapchat"><i class="fa-brands fa-snapchat"></i></a>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="../static/js/signUp.js"></script>
+</body>
+</html>

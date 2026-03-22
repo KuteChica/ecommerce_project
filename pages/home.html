@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwiftServe</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body data-requires-auth="true" data-page="store">
+  <div class="page">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">e</div>
+        <span>SwiftServe</span>
+      </div>
+      <nav class="navlinks">
+        <a href="/index.html">Home</a>
+        <a href="/index.html#featured">Products</a>
+        <a href="/pages/about.html">About</a>
+        <a href="/pages/cart.html">Cart</a>
+        <a href="/pages/contact.html">Contact</a>
+        <a href="/pages/FAQ.html">FAQ</a>
+        <a href="#" onclick="handleLogout(); return false;">Logout</a>
+      </nav>
+      <a class="cta" href="/pages/account.html" data-account-cta>My Account</a>
+    </header>
+
+    <section class="hero">
+      <div class="hero-text">
+        <h1>Elevate your shopping experience</h1>
+        <p>Discover tech, lifestyle, and essentials curated for everyday comfort and style.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="/pages/checkout.html">Shop Now</a>
+          <a class="btn ghost" href="/pages/about.html">Learn More</a>
+        </div>
+      </div>
+      <div class="hero-media">
+        <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800" alt="Featured product">
+      </div>
+    </section>
+
+    <section class="section" id="featured">
+      <div class="section-head">
+        <h2>Featured Products</h2>
+        <a class="link" href="/pages/cart.html">See All Products</a>
+      </div>
+      <div class="card-grid" data-product-grid>
+        <article class="product-card">
+          <p>Loading products...</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>Shop by Category</h2>
+        <div class="arrows">
+          <span class="circle"><i class="fa-solid fa-arrow-left"></i></span>
+          <span class="circle"><i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </div>
+      <div class="category-grid" data-category-grid>
+        <article class="category-card">
+          <p>Loading categories...</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="benefits">
+      <h2>Experience streamlined shopping</h2>
+      <div class="benefit-grid">
+        <article>
+          <i class="fa-solid fa-truck"></i>
+          <h3>Free Delivery</h3>
+          <p>Fast drop-off across major cities.</p>
+        </article>
+        <article>
+          <i class="fa-solid fa-handshake"></i>
+          <h3>Easy Pickup</h3>
+          <p>Choose pickup times that suit you.</p>
+        </article>
+        <article>
+          <i class="fa-solid fa-shield"></i>
+          <h3>Warranty</h3>
+          <p>Peace of mind on every order.</p>
+        </article>
+      </div>
+      <a class="btn primary" href="/pages/checkout.html">Shop Now</a>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="#" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+        <a href="#" aria-label="Snapchat"><i class="fa-brands fa-snapchat"></i></a>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/js/login.js" type="module"></script>
+  <script src="/static/js/storefront.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders | SwiftServe Admin</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">e</div>
+        <span>SwiftServe Admin</span>
+      </div>
+      <nav class="navlinks">
+        <a href="/backend/dasboard.html">Dashboard</a>
+        <a href="/backend/orders.html">Orders</a>
+        <a href="/pages/home.html">Store Home</a>
+      </nav>
+      <button class="cta" type="button" onclick="handleAdminOrdersLogout()">Logout</button>
+    </header>
+
+    <section class="simple-hero">
+      <h1>Customer Orders</h1>
+      <p>Review incoming orders and move them through processing.</p>
+    </section>
+
+    <section class="content-panel">
+      <div class="inventory-wrap">
+        <table class="inventory-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Contact & Address</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody">
+            <tr>
+              <td colspan="7">Loading orders...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="/static/js/adminOrders.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cart | SwiftServe</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body data-requires-auth="true" data-page="cart">
+  <div class="page">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">e</div>
+        <span>SwiftServe</span>
+      </div>
+      <nav class="navlinks">
+        <a href="/index.html">Home</a>
+        <a href="/index.html#featured">Products</a>
+        <a href="/pages/about.html">About</a>
+        <a href="/pages/cart.html">Cart</a>
+        <a href="/pages/contact.html">Contact</a>
+        <a href="/pages/FAQ.html">FAQ</a>
+        <a href="#" onclick="handleLogout(); return false;">Logout</a>
+      </nav>
+      <a class="cta" href="/pages/account.html" data-account-cta>My Account</a>
+    </header>
+
+    <section class="simple-hero">
+      <h1>Your Cart</h1>
+      <p>Review your items and move to checkout.</p>
+    </section>
+
+    <section class="content-panel">
+      <div class="summary-list" id="cartItemsContainer">
+        <div class="summary-item">
+          <span>Loading cart...</span>
+        </div>
+      </div>
+      <div class="summary-item">
+        <strong>Total</strong>
+        <strong id="cartTotalAmount">GH₵0.00</strong>
+      </div>
+      <a class="btn primary" href="/pages/checkout.html" id="checkoutBtn">Proceed to Checkout</a>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="#" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+        <a href="#" aria-label="Snapchat"><i class="fa-brands fa-snapchat"></i></a>
+      </div>
+    </footer>
+  </div>
+  <script src="/static/js/login.js" type="module"></script>
+  <script src="/static/js/storefront.js" type="module"></script>
+</body>
+</html>

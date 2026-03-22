@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout | SwiftServe</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body data-requires-auth="true" data-page="checkout">
+  <div class="page">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">e</div>
+        <span>SwiftServe</span>
+      </div>
+      <nav class="navlinks">
+        <a href="/index.html">Home</a>
+        <a href="/index.html#featured">Products</a>
+        <a href="/pages/about.html">About</a>
+        <a href="/pages/cart.html">Cart</a>
+        <a href="/pages/contact.html">Contact</a>
+        <a href="/pages/FAQ.html">FAQ</a>
+        <a href="#" onclick="handleLogout(); return false;">Logout</a>
+      </nav>
+      <a class="cta" href="/pages/account.html" data-account-cta>My Account</a>
+    </header>
+
+    <section class="simple-hero">
+      <h1>Checkout</h1>
+      <p>Complete your delivery details and confirm payment.</p>
+    </section>
+
+    <section class="content-panel">
+      <div class="form-grid">
+        <div class="input-group">
+          <label>Full Name</label>
+          <input type="text" placeholder="Jane Doe" id="checkoutName">
+        </div>
+        <div class="input-group">
+          <label>Phone</label>
+          <input type="text" placeholder="+233 000 000 000" id="checkoutPhone">
+        </div>
+        <div class="input-group">
+          <label>Email</label>
+          <input type="email" placeholder="you@email.com" id="checkoutEmail">
+        </div>
+        <div class="input-group">
+          <label>City</label>
+          <input type="text" placeholder="Accra" id="checkoutCity">
+        </div>
+        <div class="input-group" style="grid-column: 1 / -1;">
+          <label>Delivery Address</label>
+          <textarea placeholder="Street, area, and landmarks" id="checkoutAddress"></textarea>
+        </div>
+      </div>
+      <div class="summary-item">
+        <strong>Order Total</strong>
+        <strong id="checkoutTotalAmount">GH₵0.00</strong>
+      </div>
+      <div class="summary-list" id="checkoutItems">
+        <div class="summary-item">
+          <span>Loading order items...</span>
+        </div>
+      </div>
+      <button class="btn primary" id="placeOrderBtn" type="button">Place Order</button>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="#" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+        <a href="#" aria-label="Snapchat"><i class="fa-brands fa-snapchat"></i></a>
+      </div>
+    </footer>
+  </div>
+  <script src="/static/js/login.js" type="module"></script>
+  <script src="/static/js/storefront.js" type="module"></script>
+</body>
+</html>
