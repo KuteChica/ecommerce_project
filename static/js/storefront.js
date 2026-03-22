@@ -1,6 +1,8 @@
-import { getProducts, createOrder } from "../../backend/server.js";
+import { getProducts, createOrder, getProductReviews, addProductReview, hasPurchasedProduct } from "../../backend/server.js";
 
 const CART_KEY = "cartItems";
+let storefrontProducts = [];
+let activeModalProductId = "";
 
 function formatPrice(amount) {
     return `GH₵${Number(amount || 0).toLocaleString(undefined, {
@@ -63,6 +65,36 @@ function safeText(value, fallback) {
     return value;
 }
 
+function getUserProfile() {
+    try {
+        const raw = localStorage.getItem("userProfile");
+        return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function renderStars(ratingValue) {
+    const rating = Math.max(0, Math.min(5, Number(ratingValue || 0)));
+    const rounded = Math.round(rating);
+    return `${"★".repeat(rounded)}${"☆".repeat(5 - rounded)}`;
+}
+
+function getRatingAverage(product) {
+    return Number(product?.ratingAverage ?? 3);
+}
+
+function getRatingCount(product) {
+    return Number(product?.ratingCount || 0);
+}
+
+function getRatingLabel(product) {
+    const avg = getRatingAverage(product);
+    const count = getRatingCount(product);
+    const reviewWord = count === 1 ? "review" : "reviews";
+    return `${renderStars(avg)} (${avg.toFixed(1)} • ${count} ${reviewWord})`;
+}
+
 function ensureProductModal() {
     if (document.getElementById("productDetailsModal")) return;
 
@@ -75,9 +107,30 @@ function ensureProductModal() {
         <img id="productModalImage" class="product-modal-image" src="" alt="Product image">
         <h3 id="productModalTitle">Product</h3>
         <p class="label" id="productModalCategory">Category</p>
+        <p class="product-rating" id="productModalRating">★★★☆☆ (3.0 • 0 reviews)</p>
         <p class="product-modal-price" id="productModalPrice">GH₵0.00</p>
         <p id="productModalStock">In stock: 0</p>
         <p id="productModalDescription">Description</p>
+        <div class="review-section">
+          <h4>Customer Reviews</h4>
+          <div id="productReviewsList" class="review-list">
+            <p class="review-empty">No reviews yet.</p>
+          </div>
+          <form id="productReviewForm" class="review-form">
+            <label for="reviewRating">Your Rating</label>
+            <select id="reviewRating">
+              <option value="5">5 - Excellent</option>
+              <option value="4">4 - Good</option>
+              <option value="3" selected>3 - Okay</option>
+              <option value="2">2 - Poor</option>
+              <option value="1">1 - Bad</option>
+            </select>
+            <label for="reviewComment">Review</label>
+            <textarea id="reviewComment" placeholder="Share a quick review..."></textarea>
+            <button type="submit" class="btn primary">Submit Review</button>
+            <p id="reviewHint" class="review-hint"></p>
+          </form>
+        </div>
       </div>
     `;
 
@@ -94,15 +147,64 @@ function ensureProductModal() {
             modal.classList.remove("open");
         }
     });
+
+    const reviewForm = document.getElementById("productReviewForm");
+    if (reviewForm) {
+        reviewForm.addEventListener("submit", handleReviewSubmit);
+    }
 }
 
-function openProductModal(product) {
+function renderModalReviews(reviews) {
+    const list = document.getElementById("productReviewsList");
+    if (!list) return;
+
+    if (!reviews.length) {
+        list.innerHTML = "<p class=\"review-empty\">No reviews yet. Be the first reviewer.</p>";
+        return;
+    }
+
+    list.innerHTML = reviews.map((review) => `
+      <article class="review-item">
+        <p><strong>${safeText(review.reviewerName, "Customer")}</strong></p>
+        <p class="review-stars">${renderStars(review.rating)} (${Number(review.rating || 0).toFixed(1)})</p>
+        <p>${safeText(review.comment, "No comment provided.")}</p>
+      </article>
+    `).join("");
+}
+
+async function updateReviewFormAccess(productId) {
+    const profile = getUserProfile();
+    const reviewForm = document.getElementById("productReviewForm");
+    const hint = document.getElementById("reviewHint");
+    const submitButton = reviewForm?.querySelector("button[type=\"submit\"]");
+
+    if (!reviewForm || !hint || !submitButton) return;
+
+    if (!profile?.email) {
+        hint.textContent = "Login and complete a purchase to leave a review.";
+        submitButton.disabled = false;
+        return;
+    }
+
+    const eligible = await hasPurchasedProduct(profile.email, productId);
+    if (!eligible) {
+        hint.textContent = "Only customers who purchased this product can review it.";
+        submitButton.disabled = false;
+        return;
+    }
+
+    hint.textContent = "You can review this product.";
+    submitButton.disabled = false;
+}
+
+async function openProductModal(product) {
     const modal = document.getElementById("productDetailsModal");
     if (!modal) return;
 
     const image = document.getElementById("productModalImage");
     const title = document.getElementById("productModalTitle");
     const category = document.getElementById("productModalCategory");
+    const rating = document.getElementById("productModalRating");
     const price = document.getElementById("productModalPrice");
     const stock = document.getElementById("productModalStock");
     const description = document.getElementById("productModalDescription");
@@ -111,11 +213,64 @@ function openProductModal(product) {
     if (image) image.alt = safeText(product.name, "Product image");
     if (title) title.textContent = safeText(product.name, "Untitled Product");
     if (category) category.textContent = safeText(product.category, "Uncategorized");
+    if (rating) rating.textContent = getRatingLabel(product);
     if (price) price.textContent = formatPrice(product.price);
     if (stock) stock.textContent = `In stock: ${Number(product.inStock || 0)}`;
     if (description) description.textContent = safeText(product.description, "No description available.");
 
+    activeModalProductId = product.id;
+    const reviews = await getProductReviews(product.id);
+    renderModalReviews(reviews);
+    await updateReviewFormAccess(product.id);
+
     modal.classList.add("open");
+}
+
+async function handleReviewSubmit(event) {
+    event.preventDefault();
+
+    if (!activeModalProductId) return;
+
+    const profile = getUserProfile();
+    if (!profile?.email) {
+        alert("Please login to submit a review.");
+        return;
+    }
+
+    const ratingInput = document.getElementById("reviewRating");
+    const commentInput = document.getElementById("reviewComment");
+
+    const ratingValue = ratingInput ? Number(ratingInput.value || 3) : 3;
+    const commentValue = commentInput ? commentInput.value.trim() : "";
+
+    const result = await addProductReview(
+        activeModalProductId,
+        profile.name || profile.email,
+        profile.email,
+        ratingValue,
+        commentValue
+    );
+
+    if (!result.ok) {
+        alert(result.message || "Could not submit review.");
+        return;
+    }
+
+    alert("Review submitted successfully.");
+
+    if (commentInput) commentInput.value = "";
+    if (ratingInput) ratingInput.value = "3";
+
+    storefrontProducts = await getProducts();
+    renderProducts(storefrontProducts);
+    renderCategories(storefrontProducts);
+    renderCart(storefrontProducts);
+    renderCheckout(storefrontProducts);
+
+    const refreshedProduct = storefrontProducts.find((item) => item.id === activeModalProductId);
+    if (refreshedProduct) {
+        await openProductModal(refreshedProduct);
+    }
 }
 
 function renderProducts(products) {
@@ -131,6 +286,7 @@ function renderProducts(products) {
       <article class="product-card product-clickable" data-product-id="${item.id}">
         <img src="${safeText(item.imageUrl, "https://via.placeholder.com/400x300?text=Product")}" alt="${safeText(item.name, "Product")}">
         <p class="label">${safeText(item.category, "Uncategorized")}</p>
+        <p class="product-rating">${getRatingLabel(item)}</p>
         <h3>${safeText(item.name, "Untitled Product")}</h3>
         <p>${safeText(item.description, "No description available.")}</p>
         <span>${formatPrice(item.price)}</span>
@@ -269,14 +425,14 @@ function renderCheckout(products) {
     totalEl.textContent = formatPrice(total);
 }
 
-function bindCartActions(products) {
+function bindCartActions() {
     document.addEventListener("click", function (event) {
         const addBtn = event.target.closest("[data-add-to-cart]");
         if (addBtn) {
             const productId = addBtn.dataset.addToCart;
             const current = getCart().find((entry) => entry.productId === productId);
             const currentQty = Number(current?.quantity || 0);
-            const stock = getStockForProduct(products, productId);
+            const stock = getStockForProduct(storefrontProducts, productId);
 
             if (stock <= 0) {
                 alert("This product is out of stock.");
@@ -293,8 +449,8 @@ function bindCartActions(products) {
             setTimeout(() => {
                 addBtn.textContent = "Add to Cart";
             }, 600);
-            renderCart(products);
-            renderCheckout(products);
+            renderCart(storefrontProducts);
+            renderCheckout(storefrontProducts);
             return;
         }
 
@@ -302,7 +458,7 @@ function bindCartActions(products) {
         if (incBtn) {
             const productId = incBtn.dataset.cartInc;
             const current = getCart().find((entry) => entry.productId === productId);
-            const stock = getStockForProduct(products, productId);
+            const stock = getStockForProduct(storefrontProducts, productId);
             const nextQty = Number(current?.quantity || 0) + 1;
 
             if (nextQty > stock) {
@@ -311,8 +467,8 @@ function bindCartActions(products) {
             }
 
             updateCartQuantity(productId, nextQty);
-            renderCart(products);
-            renderCheckout(products);
+            renderCart(storefrontProducts);
+            renderCheckout(storefrontProducts);
             return;
         }
 
@@ -321,8 +477,8 @@ function bindCartActions(products) {
             const productId = decBtn.dataset.cartDec;
             const current = getCart().find((entry) => entry.productId === productId);
             updateCartQuantity(productId, Number(current?.quantity || 0) - 1);
-            renderCart(products);
-            renderCheckout(products);
+            renderCart(storefrontProducts);
+            renderCheckout(storefrontProducts);
             return;
         }
 
@@ -330,15 +486,13 @@ function bindCartActions(products) {
         if (removeBtn) {
             const productId = removeBtn.dataset.cartRemove;
             updateCartQuantity(productId, 0);
-            renderCart(products);
-            renderCheckout(products);
+            renderCart(storefrontProducts);
+            renderCheckout(storefrontProducts);
         }
     });
 }
 
-function bindProductDetailsModal(products) {
-    const byId = mapById(products);
-
+function bindProductDetailsModal() {
     document.addEventListener("click", function (event) {
         const addBtn = event.target.closest("[data-add-to-cart]");
         if (addBtn) return;
@@ -347,7 +501,7 @@ function bindProductDetailsModal(products) {
         if (!productCard) return;
 
         const productId = productCard.dataset.productId;
-        const product = byId[productId];
+        const product = storefrontProducts.find((item) => item.id === productId);
         if (!product) return;
 
         openProductModal(product);
@@ -366,6 +520,8 @@ function bindCheckoutAction() {
         const checkoutEmail = document.getElementById("checkoutEmail")?.value?.trim() || "";
         const checkoutCity = document.getElementById("checkoutCity")?.value?.trim() || "";
         const checkoutAddress = document.getElementById("checkoutAddress")?.value?.trim() || "";
+        const profile = getUserProfile();
+        const purchaserEmail = (profile?.email || checkoutEmail || "").trim().toLowerCase();
 
         if (!checkoutName || !checkoutPhone || !checkoutEmail || !checkoutCity || !checkoutAddress) {
             alert("Please complete all checkout details.");
@@ -395,6 +551,7 @@ function bindCheckoutAction() {
                 city: checkoutCity,
                 address: checkoutAddress
             },
+            purchaserEmail,
             items: lineItems,
             total
         });
@@ -412,15 +569,15 @@ function bindCheckoutAction() {
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
-    const products = await getProducts();
+    storefrontProducts = await getProducts();
     ensureProductModal();
 
-    renderProducts(products);
-    renderCategories(products);
-    renderCart(products);
-    renderCheckout(products);
+    renderProducts(storefrontProducts);
+    renderCategories(storefrontProducts);
+    renderCart(storefrontProducts);
+    renderCheckout(storefrontProducts);
 
-    bindCartActions(products);
-    bindProductDetailsModal(products);
+    bindCartActions();
+    bindProductDetailsModal();
     bindCheckoutAction();
 });

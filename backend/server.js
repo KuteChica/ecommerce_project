@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { getFirestore, setDoc, getDoc, doc, addDoc, collection, getDocs, query, orderBy, updateDoc } from "firebase/firestore";
+import { getFirestore, setDoc, getDoc, doc, addDoc, collection, getDocs, query, orderBy, updateDoc, where } from "firebase/firestore";
 
 const firebaseConfig = {
 apiKey: "AIzaSyC99VhGen0dD4ci-fsYdXyIZzj5SytyvMQ",
@@ -177,6 +177,8 @@ export async function addProduct(name, description, category, price, imageUrl, i
             price: cleanPrice,
             imageUrl: imageUrl.trim(),
             inStock: cleanStock,
+            ratingAverage: 3,
+            ratingCount: 0,
             createdAt: Date.now()
         });
 
@@ -224,6 +226,7 @@ export async function updateInventory(productId, inStock) {
 export async function createOrder(orderPayload) {
     try {
         const customer = orderPayload?.customer || {};
+        const purchaserEmail = (orderPayload?.purchaserEmail || customer.email || "").trim().toLowerCase();
         const items = Array.isArray(orderPayload?.items) ? orderPayload.items : [];
         const total = Number(orderPayload?.total || 0);
 
@@ -240,7 +243,12 @@ export async function createOrder(orderPayload) {
         }
 
         const orderRef = await addDoc(collection(database, "orders"), {
-            customer,
+            customer: {
+                ...customer,
+                email: (customer.email || "").trim(),
+                emailLower: (customer.email || "").trim().toLowerCase()
+            },
+            purchaserEmail,
             items,
             total,
             status: "pending",
@@ -284,5 +292,98 @@ export async function updateOrderStatus(orderId, status) {
     } catch (error) {
         console.log("updateOrderStatus error:", error);
         return { ok: false, message: "Could not update order." };
+    }
+}
+
+export async function hasPurchasedProduct(email, productId) {
+    try {
+        if (!email || !productId) return false;
+        const normalizedEmail = email.trim().toLowerCase();
+
+        const lookups = [
+            query(collection(database, "orders"), where("purchaserEmail", "==", normalizedEmail)),
+            query(collection(database, "orders"), where("customer.emailLower", "==", normalizedEmail)),
+            query(collection(database, "orders"), where("customer.email", "==", email.trim()))
+        ];
+
+        for (const ordersQuery of lookups) {
+            const snapshot = await getDocs(ordersQuery);
+
+            for (const entry of snapshot.docs) {
+                const order = entry.data();
+                const items = Array.isArray(order.items) ? order.items : [];
+                const matched = items.some((item) => item.productId === productId);
+                if (matched) return true;
+            }
+        }
+
+        return false;
+    } catch (error) {
+        console.log("hasPurchasedProduct error:", error);
+        return false;
+    }
+}
+
+export async function getProductReviews(productId) {
+    try {
+        if (!productId) return [];
+        const reviewsQuery = query(
+            collection(database, "products", productId, "reviews"),
+            orderBy("createdAt", "desc")
+        );
+        const snapshot = await getDocs(reviewsQuery);
+
+        return snapshot.docs.map((entry) => ({
+            id: entry.id,
+            ...entry.data()
+        }));
+    } catch (error) {
+        console.log("getProductReviews error:", error);
+        return [];
+    }
+}
+
+export async function addProductReview(productId, reviewerName, reviewerEmail, rating, comment) {
+    try {
+        if (!productId || !reviewerEmail) {
+            return { ok: false, message: "Missing review details." };
+        }
+
+        const cleanRating = Number(rating);
+        if (Number.isNaN(cleanRating) || cleanRating < 1 || cleanRating > 5) {
+            return { ok: false, message: "Rating must be between 1 and 5." };
+        }
+
+        const canReview = await hasPurchasedProduct(reviewerEmail, productId);
+        if (!canReview) {
+            return { ok: false, message: "Only customers who purchased this product can review it." };
+        }
+
+        const reviewText = (comment || "").trim();
+        await addDoc(collection(database, "products", productId, "reviews"), {
+            reviewerName: (reviewerName || reviewerEmail || "Customer").trim(),
+            reviewerEmail: reviewerEmail.trim(),
+            rating: cleanRating,
+            comment: reviewText,
+            createdAt: Date.now()
+        });
+
+        const productRef = doc(database, "products", productId);
+        const productSnap = await getDoc(productRef);
+        const productData = productSnap.exists() ? productSnap.data() : {};
+        const currentCount = Number(productData.ratingCount || 0);
+        const currentAverage = Number(productData.ratingAverage || 3);
+        const nextCount = currentCount + 1;
+        const nextAverage = ((currentAverage * currentCount) + cleanRating) / nextCount;
+
+        await updateDoc(productRef, {
+            ratingAverage: Number(nextAverage.toFixed(2)),
+            ratingCount: nextCount
+        });
+
+        return { ok: true };
+    } catch (error) {
+        console.log("addProductReview error:", error);
+        return { ok: false, message: "Failed to add review." };
     }
 }
