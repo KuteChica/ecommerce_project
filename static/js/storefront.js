@@ -3,6 +3,8 @@ import { getProducts, createOrder, getProductReviews, addProductReview, hasPurch
 const CART_KEY = "cartItems";
 let storefrontProducts = [];
 let activeModalProductId = "";
+let activeCategoryFilter = "";
+let showAllProducts = false;
 
 function formatPrice(amount) {
     return `GH₵${Number(amount || 0).toLocaleString(undefined, {
@@ -277,12 +279,24 @@ function renderProducts(products) {
     const productGrid = document.querySelector("[data-product-grid]");
     if (!productGrid) return;
 
-    if (!products.length) {
+    const normalizedFilter = activeCategoryFilter.trim().toLowerCase();
+    const filteredProducts = normalizedFilter
+        ? products.filter((item) => safeText(item.category, "Uncategorized").trim().toLowerCase() === normalizedFilter)
+        : products;
+    const visibleProducts = showAllProducts ? filteredProducts : filteredProducts.slice(0, 9);
+
+    if (!filteredProducts.length) {
+        const filterLabel = activeCategoryFilter || "this category";
+        productGrid.innerHTML = `<article class="product-card"><p>No products found for ${filterLabel}.</p></article>`;
+        return;
+    }
+
+    if (!visibleProducts.length) {
         productGrid.innerHTML = "<article class=\"product-card\"><p>No products found in inventory yet.</p></article>";
         return;
     }
 
-    productGrid.innerHTML = products.slice(0, 9).map((item) => `
+    productGrid.innerHTML = visibleProducts.map((item) => `
       <article class="product-card product-clickable" data-product-id="${item.id}">
         <img src="${safeText(item.imageUrl, "https://via.placeholder.com/400x300?text=Product")}" alt="${safeText(item.name, "Product")}">
         <p class="label">${safeText(item.category, "Uncategorized")}</p>
@@ -314,14 +328,22 @@ function renderCategories(products) {
         return;
     }
 
+    const storePath = window.location.pathname.includes("/pages/home.html") ? "/pages/home.html" : "/index.html";
+
     categoryGrid.innerHTML = cards.map(([category, items]) => `
       <article class="category-card">
         <h3>${category}</h3>
         <p>${items.length} product(s) available in this category.</p>
-        <a class="link" href="/pages/cart.html">View Products</a>
+        <a class="link" href="${storePath}?category=${encodeURIComponent(category)}#featured">View Products</a>
         <img src="${safeText(items[0].imageUrl, "https://via.placeholder.com/400x300?text=Category")}" alt="${category}">
       </article>
     `).join("");
+}
+
+function applyProductFiltersFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    activeCategoryFilter = (params.get("category") || "").trim();
+    showAllProducts = (params.get("view") || "").toLowerCase() === "all";
 }
 
 function getLineItems(products) {
@@ -569,6 +591,7 @@ function bindCheckoutAction() {
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
+    applyProductFiltersFromUrl();
     storefrontProducts = await getProducts();
     ensureProductModal();
 
