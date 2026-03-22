@@ -277,6 +277,36 @@ export async function getOrders() {
     }
 }
 
+export async function getCustomerOrders(email) {
+    try {
+        const rawEmail = (email || "").trim();
+        if (!rawEmail) return [];
+        const normalizedEmail = rawEmail.toLowerCase();
+        const merged = new Map();
+
+        const lookups = [
+            query(collection(database, "orders"), where("purchaserEmail", "==", normalizedEmail)),
+            query(collection(database, "orders"), where("customer.emailLower", "==", normalizedEmail)),
+            query(collection(database, "orders"), where("customer.email", "==", rawEmail))
+        ];
+
+        for (const ordersQuery of lookups) {
+            const snapshot = await getDocs(ordersQuery);
+            for (const entry of snapshot.docs) {
+                merged.set(entry.id, {
+                    id: entry.id,
+                    ...entry.data()
+                });
+            }
+        }
+
+        return Array.from(merged.values()).sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    } catch (error) {
+        console.log("getCustomerOrders error:", error);
+        return [];
+    }
+}
+
 export async function updateOrderStatus(orderId, status) {
     try {
         const allowed = ["pending", "processing", "completed"];
