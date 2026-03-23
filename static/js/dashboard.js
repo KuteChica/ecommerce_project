@@ -1,7 +1,35 @@
-import { addProduct, getProducts, updateInventory, isAdminLoggedIn, logout } from "../../backend/server.js";
+import { addProduct, getProducts, updateInventory, deleteProduct, isAdminLoggedIn, logout } from "../../backend/server.js";
+
+const CURATED_CATEGORIES = [
+    "Phones & Tablets",
+    "Laptops & Computers",
+    "Audio & Headphones",
+    "TV & Home Entertainment",
+    "Kitchen Appliances",
+    "Home Appliances",
+    "Power & Electrical",
+    "Smart Home Devices",
+    "Computer Accessories",
+    "Gaming & Consoles"
+];
 
 function asMoney(value) {
     return `GH₵${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function normalizeCategoryLabel(rawCategory) {
+    const cleaned = String(rawCategory || "").replace(/\s+/g, " ").trim();
+    if (!cleaned) return "";
+
+    const exactMatch = CURATED_CATEGORIES.find(
+        (category) => category.toLowerCase() === cleaned.toLowerCase()
+    );
+    if (exactMatch) return exactMatch;
+
+    return cleaned
+        .split(" ")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(" ");
 }
 
 function readAdminProfile() {
@@ -40,7 +68,10 @@ function paintInventory(products) {
             <input type="number" min="0" value="${stockCount}" class="stock-input" data-stock-id="${product.id}">
           </td>
           <td>
-            <button class="btn primary inventory-save" data-save-id="${product.id}">Save</button>
+            <div class="inventory-actions">
+              <button class="btn primary inventory-save" data-save-id="${product.id}">Save</button>
+              <button class="btn danger inventory-delete" data-delete-id="${product.id}" type="button">Delete</button>
+            </div>
           </td>
         </tr>
         `;
@@ -57,7 +88,7 @@ async function onAddProduct(evt) {
 
     const name = document.getElementById("productName").value;
     const description = document.getElementById("productDescription").value;
-    const category = document.getElementById("productCategory").value;
+    const category = normalizeCategoryLabel(document.getElementById("productCategory").value);
     const price = document.getElementById("productPrice").value;
     const imageUrl = document.getElementById("productImageUrl").value;
     const stock = document.getElementById("productStock").value;
@@ -75,19 +106,38 @@ async function onAddProduct(evt) {
 
 async function onInventoryAction(evt) {
     const saveBtn = evt.target.closest("[data-save-id]");
-    if (!saveBtn) return;
+    if (saveBtn) {
+        const id = saveBtn.dataset.saveId;
+        const stockInput = document.querySelector(`[data-stock-id="${id}"]`);
+        const nextStock = stockInput ? stockInput.value : "";
 
-    const id = saveBtn.dataset.saveId;
-    const stockInput = document.querySelector(`[data-stock-id="${id}"]`);
-    const nextStock = stockInput ? stockInput.value : "";
+        const updateRes = await updateInventory(id, nextStock);
+        if (!updateRes.ok) {
+            alert(updateRes.message || "Could not update stock.");
+            return;
+        }
 
-    const updateRes = await updateInventory(id, nextStock);
-    if (!updateRes.ok) {
-        alert(updateRes.message || "Could not update stock.");
+        alert("Inventory updated.");
+        await loadInventory();
         return;
     }
 
-    alert("Inventory updated.");
+    const deleteBtn = evt.target.closest("[data-delete-id]");
+    if (!deleteBtn) return;
+
+    const id = deleteBtn.dataset.deleteId;
+    if (!id) return;
+
+    const shouldDelete = window.confirm("Delete this product from inventory? This cannot be undone.");
+    if (!shouldDelete) return;
+
+    const deleteRes = await deleteProduct(id);
+    if (!deleteRes.ok) {
+        alert(deleteRes.message || "Could not delete product.");
+        return;
+    }
+
+    alert("Product deleted.");
     await loadInventory();
 }
 

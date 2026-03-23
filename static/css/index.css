@@ -330,6 +330,11 @@ body {
   resize: vertical;
 }
 
+.form-hint {
+  color: #5c6784;
+  font-size: 14px;
+}
+
 .summary-list {
   display: grid;
   gap: 10px;
@@ -597,6 +602,17 @@ body {
 
 .inventory-save {
   padding: 8px 12px;
+}
+
+.inventory-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn.danger {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .status-pill {

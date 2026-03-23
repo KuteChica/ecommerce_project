@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { getFirestore, setDoc, getDoc, doc, addDoc, collection, getDocs, query, orderBy, updateDoc, where } from "firebase/firestore";
+import { getFirestore, setDoc, getDoc, doc, addDoc, collection, getDocs, query, orderBy, updateDoc, deleteDoc, where } from "firebase/firestore";
 
 const firebaseConfig = {
 apiKey: "AIzaSyC99VhGen0dD4ci-fsYdXyIZzj5SytyvMQ",
@@ -220,6 +220,20 @@ export async function updateInventory(productId, inStock) {
     } catch (error) {
         console.log("updateInventory error:", error);
         return { ok: false, message: "Failed to update inventory." };
+    }
+}
+
+export async function deleteProduct(productId) {
+    try {
+        if (!productId) {
+            return { ok: false, message: "Invalid product id." };
+        }
+
+        await deleteDoc(doc(db, "products", productId));
+        return { ok: true };
+    } catch (error) {
+        console.log("deleteProduct error:", error);
+        return { ok: false, message: "Failed to delete product." };
     }
 }
 

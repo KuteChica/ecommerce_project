@@ -30,8 +30,9 @@
 
     <section class="content-panel">
       <div class="section-head">
-        <h2>Add Project/Product</h2>
+        <h2>Add Product</h2>
       </div>
+      <p class="form-hint">Use clear, shopper-friendly categories focused on electronics and home appliances.</p>
 
       <form id="addProductForm" class="form-grid">
         <div class="input-group">
@@ -40,7 +41,19 @@
         </div>
         <div class="input-group">
           <label for="productCategory">Category</label>
-          <input type="text" id="productCategory" placeholder="Accessories" required>
+          <input type="text" id="productCategory" list="electronicsCategories" placeholder="Phones & Tablets" required>
+          <datalist id="electronicsCategories">
+            <option value="Phones & Tablets"></option>
+            <option value="Laptops & Computers"></option>
+            <option value="Audio & Headphones"></option>
+            <option value="TV & Home Entertainment"></option>
+            <option value="Kitchen Appliances"></option>
+            <option value="Home Appliances"></option>
+            <option value="Power & Electrical"></option>
+            <option value="Smart Home Devices"></option>
+            <option value="Computer Accessories"></option>
+            <option value="Gaming & Consoles"></option>
+          </datalist>
         </div>
         <div class="input-group">
           <label for="productPrice">Price</label>
