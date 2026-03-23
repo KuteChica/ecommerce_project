@@ -4,6 +4,7 @@ const CART_KEY = "cartItems";
 let productListCache = [];
 let openProductId = "";
 let currentCategoryFilter = "";
+let currentSearchTerm = "";
 let showEverything = false;
 
 function formatMoney(amount) {
@@ -65,6 +66,10 @@ function indexById(products) {
 function safeString(value, fallback) {
     if (!value || typeof value !== "string") return fallback;
     return value;
+}
+
+function normalizeText(value) {
+    return safeString(value, "").trim().toLowerCase();
 }
 
 function readUserProfile() {
@@ -277,22 +282,56 @@ async function handleReviewSubmit(event) {
 
 function renderProducts(products) {
     const productGrid = document.querySelector("[data-product-grid]");
+    const feedback = document.querySelector("[data-search-feedback]");
     if (!productGrid) return;
 
-    const normalizedFilter = currentCategoryFilter.trim().toLowerCase();
-    const filteredProducts = normalizedFilter
-        ? products.filter((item) => safeString(item.category, "Uncategorized").trim().toLowerCase() === normalizedFilter)
-        : products;
+    const normalizedFilter = normalizeText(currentCategoryFilter);
+    const normalizedSearch = normalizeText(currentSearchTerm);
+    const filteredProducts = products.filter((item) => {
+        const matchesCategory = normalizedFilter
+            ? normalizeText(item.category) === normalizedFilter
+            : true;
+
+        if (!matchesCategory) return false;
+        if (!normalizedSearch) return true;
+
+        const searchableText = [
+            safeString(item.name, ""),
+            safeString(item.category, ""),
+            safeString(item.description, "")
+        ].join(" ").toLowerCase();
+
+        return searchableText.includes(normalizedSearch);
+    });
     const visibleProducts = showEverything ? filteredProducts : filteredProducts.slice(0, 9);
 
-    if (!filteredProducts.length) {
-        const filterLabel = currentCategoryFilter || "this category";
-        productGrid.innerHTML = `<article class="product-card"><p>No products found for ${filterLabel}.</p></article>`;
-        return;
+    if (feedback) {
+        const productWord = filteredProducts.length === 1 ? "product" : "products";
+        const pieces = [];
+
+        if (normalizedSearch) {
+            pieces.push(`Showing ${filteredProducts.length} ${productWord} for "${currentSearchTerm.trim()}".`);
+        } else {
+            pieces.push(`Showing ${filteredProducts.length} ${productWord} right now.`);
+        }
+
+        if (currentCategoryFilter) {
+            pieces.push(`Category: ${currentCategoryFilter}.`);
+        }
+
+        if (!showEverything && filteredProducts.length > visibleProducts.length) {
+            pieces.push(`Top ${visibleProducts.length} are on screen.`);
+        }
+
+        feedback.textContent = pieces.join(" ");
     }
 
-    if (!visibleProducts.length) {
-        productGrid.innerHTML = "<article class=\"product-card\"><p>No products found in inventory yet.</p></article>";
+    if (!filteredProducts.length) {
+        const parts = [];
+        if (currentSearchTerm.trim()) parts.push(`"${currentSearchTerm.trim()}"`);
+        if (currentCategoryFilter) parts.push(currentCategoryFilter);
+        const contextLabel = parts.length ? parts.join(" in ") : "your search";
+        productGrid.innerHTML = `<article class="product-card product-empty-state"><p>Nothing matched ${contextLabel}. Try a simpler word or clear the filters.</p></article>`;
         return;
     }
 
@@ -343,7 +382,87 @@ function renderCategories(products) {
 function applyProductFiltersFromUrl() {
     const params = new URLSearchParams(window.location.search);
     currentCategoryFilter = (params.get("category") || "").trim();
+    currentSearchTerm = (params.get("search") || "").trim();
     showEverything = (params.get("view") || "").toLowerCase() === "all";
+}
+
+function updateSearchUi() {
+    const searchShell = document.querySelector("[data-search-shell]");
+    const searchToggle = document.querySelector("[data-search-toggle]");
+    const searchInput = document.querySelector("[data-search-input]");
+    const searchButton = document.querySelector("[data-search-submit]");
+    const hasSearchValue = !!currentSearchTerm.trim();
+
+    if (searchInput) {
+        searchInput.value = currentSearchTerm;
+    }
+
+    if (searchButton) {
+        searchButton.disabled = !productListCache.length;
+    }
+
+    if (searchShell) {
+        searchShell.classList.toggle("header-search-expanded", hasSearchValue);
+        searchShell.classList.toggle("header-search-collapsed", !hasSearchValue);
+    }
+
+    if (searchToggle) {
+        searchToggle.setAttribute("aria-expanded", hasSearchValue ? "true" : "false");
+    }
+}
+
+function bindSearchControls() {
+    const searchShell = document.querySelector("[data-search-shell]");
+    const searchToggle = document.querySelector("[data-search-toggle]");
+    const searchInput = document.querySelector("[data-search-input]");
+    const searchButton = document.querySelector("[data-search-submit]");
+    if (!searchShell || !searchToggle || !searchInput || !searchButton) return;
+
+    function runSearch() {
+        currentSearchTerm = searchInput.value || "";
+        renderProducts(productListCache);
+        updateSearchUi();
+
+        const featuredSection = document.getElementById("featured");
+        if (featuredSection) {
+            featuredSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }
+
+    function openSearch() {
+        searchShell.classList.add("header-search-expanded");
+        searchShell.classList.remove("header-search-collapsed");
+        searchToggle.setAttribute("aria-expanded", "true");
+        searchInput.focus();
+    }
+
+    searchInput.addEventListener("input", function (event) {
+        currentSearchTerm = event.target.value || "";
+        renderProducts(productListCache);
+        updateSearchUi();
+    });
+
+    searchInput.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        runSearch();
+    });
+
+    searchButton.addEventListener("click", function () {
+        runSearch();
+    });
+
+    searchToggle.addEventListener("click", function () {
+        openSearch();
+    });
+
+    document.addEventListener("click", function (event) {
+        if (searchShell.contains(event.target)) return;
+        if (searchInput.value.trim()) return;
+
+        currentSearchTerm = "";
+        updateSearchUi();
+    });
 }
 
 function getLineItems(products) {
@@ -599,7 +718,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     renderCategories(productListCache);
     renderCart(productListCache);
     renderCheckout(productListCache);
+    updateSearchUi();
 
+    bindSearchControls();
     bindCartActions();
     bindProductDetailsModal();
     bindCheckoutAction();

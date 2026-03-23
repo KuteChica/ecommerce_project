@@ -14,6 +14,22 @@
         <div class="logo">e</div>
         <span>SwiftServe</span>
       </div>
+      <div class="header-search header-search-collapsed" data-search-shell>
+        <button class="icon-search-button" type="button" aria-label="Open search" data-search-toggle>
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        </button>
+        <label class="search-input-wrap nav-search" for="siteSearch">
+          <input
+            id="siteSearch"
+            type="search"
+            name="siteSearch"
+            placeholder="Search products, brands and categories"
+            autocomplete="off"
+            data-search-input
+          >
+        </label>
+        <button class="btn secondary search-button" type="button" data-search-submit>Search</button>
+      </div>
       <nav class="navlinks">
         <a href="index.html">Home</a>
         <a href="#featured">Products</a>
@@ -28,11 +44,11 @@
 
     <section class="hero">
       <div class="hero-text">
-        <h1>Elevate your shopping experience</h1>
-        <p>Discover tech, lifestyle, and essentials curated for everyday comfort and style.</p>
+        <h1>Find the good stuff without digging forever</h1>
+        <p>Browse everyday picks for work, home, and life, with a storefront that feels more like a helpful guide than a catalog wall.</p>
         <div class="hero-actions">
-          <a class="btn primary" href="#featured">Shop Now</a>
-          <a class="btn ghost" href="/pages/about.html">Learn More</a>
+          <a class="btn primary" href="#featured">Start Browsing</a>
+          <a class="btn ghost" href="/pages/about.html">Our Story</a>
         </div>
       </div>
       <div class="hero-media">
@@ -45,6 +61,7 @@
         <h2>Featured Products</h2>
         <a class="link" href="/index.html?view=all#featured">See All Products</a>
       </div>
+      <p class="search-feedback product-search-feedback" data-search-feedback aria-live="polite">Loading products for search...</p>
       <div class="card-grid" data-product-grid>
         <article class="product-card">
           <p>Loading products...</p>
